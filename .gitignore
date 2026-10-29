@@ -1,0 +1,21 @@
+# 依赖
+node_modules/
+
+# 密钥 / 环境变量（绝不提交）
+.env
+.env.local
+.env.*.local
+
+# Vercel 本地运行缓存
+.vercel/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+npm-debug.log*
+
+# 工具临时文件
+.tmp-tool-results/

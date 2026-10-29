@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 起名</title>
+  <style>
+    :root {
+      --bg: #f6f5f2;
+      --card: #ffffff;
+      --ink: #2b2b2b;
+      --muted: #8a8780;
+      --accent: #c4a27a;
+      --accent-dark: #a88458;
+      --line: #e6e2db;
+      --ok: #3a7d5c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
+    header { text-align: center; margin-bottom: 28px; }
+    header h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: 4px; }
+    header p { color: var(--muted); margin: 0; font-size: 14px; }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.04);
+    }
+    .row { display: flex; gap: 12px; }
+    .field { margin-bottom: 14px; flex: 1; }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 15px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+    textarea { min-height: 72px; resize: vertical; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .chip.on { border-color: var(--accent); color: var(--accent-dark); background: #faf5ee; }
+
+    button.go {
+      width: 100%;
+      margin-top: 6px;
+      padding: 13px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--accent-dark);
+      color: #fff;
+      font-size: 16px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    button.go:disabled { background: #cfc6b8; cursor: not-allowed; }
+
+    .hint { font-size: 12px; color: var(--muted); margin: 10px 0 0; text-align: center; }
+
+    .out { margin-top: 20px; }
+    .status { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); margin-right: 6px; animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: .25; } }
+
+    #streamBox {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 90px;
+      display: none;
+    }
+
+    .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card .nm { font-size: 22px; font-weight: 600; color: var(--accent-dark); margin-bottom: 8px; }
+    .card .mn { font-size: 14px; line-height: 1.6; color: var(--ink); }
+    .card .hl { font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .err { background: #fbecea; border: 1px solid #f2c9bd; color: #a3452f; border-radius: 12px; padding: 12px 16px; margin-top: 16px; font-size: 14px; }
+
+    @media (max-width: 520px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>AI 起名</h1>
+      <p>输入需求 · 流式生成 · 附寓意解读</p>
+    </header>
+
+    <section class="panel">
+      <div class="row">
+        <div class="field">
+          <label>姓氏（可选）</label>
+          <input id="surname" placeholder="如：王、李、张…" />
+        </div>
+        <div class="field">
+          <label>期望性别（可选）</label>
+          <div class="chips" id="sexChips">
+            <button type="button" class="chip" data-sex="">不限</button>
+            <button type="button" class="chip" data-sex="男孩">男孩</button>
+            <button type="button" class="chip" data-sex="女孩">女孩</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>起名需求 / 期望</label>
+        <textarea id="requirement" placeholder="例如：希望名字文雅大气，寓意平安健康，五行喜木，避免生僻字，最好两个字……"></textarea>
+      </div>
+
+      <button class="go" id="goBtn">开始起名</button>
+      <p class="hint">生成结果将展示名字与寓意，后台会记录你的需求、方案和使用模型。</p>
+    </section>
+
+    <section class="out">
+      <div class="status" id="status" style="display:none;"><span class="dot"></span><span id="statusText">正在生成…</span></div>
+      <div id="streamBox"></div>
+      <div class="card-grid" id="resultGrid" style="display:none;"></div>
+      <div class="err" id="errBox" style="display:none;"></div>
+    </section>
+  </div>
+
+  <script>
+    let selectedSex = "";
+    document.querySelectorAll("#sexChips .chip").forEach((c) => {
+      c.addEventListener("click", () => {
+        document.querySelectorAll("#sexChips .chip").forEach((x) => x.classList.remove("on"));
+        c.classList.add("on");
+        selectedSex = c.dataset.sex;
+      });
+    });
+    document.querySelector('#sexChips .chip[data-sex=""]').classList.add("on");
+
+    const $ = (id) => document.getElementById(id);
+    const goBtn = $("goBtn");
+
+    goBtn.addEventListener("click", run);
+
+    async function run() {
+      const surname = $("surname").value.trim();
+      const requirement = $("requirement").value.trim();
+      if (!requirement) { showErr("请先填写起名需求/期望"); return; }
+
+      // 组装需求字符串
+      let req = requirement;
+      if (surname) req = `姓氏：${surname}\n` + req;
+      if (selectedSex) req = `期望性别：${selectedSex}\n` + req;
+
+      goBtn.disabled = true;
+      hideErr();
+      const grid = $("resultGrid");
+      grid.style.display = "none"; grid.innerHTML = "";
+      const box = $("streamBox");
+      box.style.display = "block"; box.textContent = "";
+      $("status").style.display = "block";
+      $("statusText").textContent = "正在生成…";
+
+      try {
+        const resp = await fetch("/api/name", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requirement: req }),
+        });
+        if (!resp.ok) {
+          const e = await resp.json().catch(() => ({}));
+          throw new Error(e.error || `请求失败(${resp.status})`);
+        }
+
+        // 流式读取增量文本
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let text = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          text += decoder.decode(value, { stream: true });
+          box.textContent = text;
+        }
+        box.textContent = text;
+
+        $("statusText").textContent = "生成完成";
+        $("status").style.display = "none";
+        box.style.display = "none";
+
+        renderCards(text);
+      } catch (e) {
+        $("status").style.display = "none";
+        box.style.display = "none";
+        showErr(e.message);
+      } finally {
+        goBtn.disabled = false;
+      }
+    }
+
+    // 解析 JSON 数组并渲染名字卡片；失败则原样显示文本
+    function renderCards(text) {
+      const arr = tryParse(text);
+      const grid = $("resultGrid");
+      if (arr && arr.length) {
+        grid.style.display = "grid";
+        grid.innerHTML = "";
+        arr.forEach((item) => {
+          const name = (item.name || "").trim();
+          if (!name) return;
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML =
+            '<div class="nm"></div><div class="mn"></div>' +
+            (item.meaning ? '<div class="hl">寓意</div>' : "");
+          div.querySelector(".nm").textContent = name;
+          div.querySelector(".mn").textContent = item.meaning || "";
+          grid.appendChild(div);
+        });
+      } else {
+        // 解析失败时，直接展示模型原始输出
+        box.style.display = "block";
+        box.textContent = text || "（无输出）";
+      }
+    }
+
+    function tryParse(raw) {
+      if (!raw) return null;
+      let t = raw.trim();
+      const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (fence) t = fence[1].trim();
+      try {
+        const p = JSON.parse(t);
+        return Array.isArray(p) ? p : null;
+      } catch (_) {
+        const s = t.indexOf("["), e = t.lastIndexOf("]");
+        if (s !== -1 && e > s) {
+          try {
+            const p = JSON.parse(t.slice(s, e + 1));
+            return Array.isArray(p) ? p : null;
+          } catch (__) { return null; }
+        }
+        return null;
+      }
+    }
+
+    function showErr(msg) { const b = $("errBox"); b.textContent = msg; b.style.display = "block"; }
+    function hideErr() { $("errBox").style.display = "none"; }
+  </script>
+</body>
+</html>

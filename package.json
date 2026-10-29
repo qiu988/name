@@ -1,0 +1,16 @@
+{
+  "name": "ai-namer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Vercel + SiliconFlow 流式 AI 起名，结果写入 Supabase",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
